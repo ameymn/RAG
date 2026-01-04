@@ -7,7 +7,7 @@ from app.core.config import settings
 
 router = APIRouter()
 
-_s3_client = boto3.client(
+s3_client = boto3.client(
     's3',
     endpoint_url=settings.S3_ENDPOINT or None,
     aws_access_key_id=settings.S3_ACCESS_KEY or None,
@@ -30,7 +30,7 @@ async def upload_file(file: UploadFile = File(...)):
     key = f"{doc_id}/{filename}"
     
     try:
-        _s3_client.put_object(Bucket=settings.S3_BUCKET, Key=key, Body=raw)
+        s3_client.put_object(Bucket=settings.S3_BUCKET, Key=key, Body=raw)
     except (BotoCoreError, ClientError) as e:
         raise HTTPException(status_code=500, detail=f"S3 upload error: {e}")
     s3_uri = f"s3://{settings.S3_BUCKET}/{key}"
