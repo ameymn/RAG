@@ -1,34 +1,53 @@
 from groq import Groq
 from app.core.config import settings
+import boto3
+from botocore.client import Config
+from app.utils.prompts import load_prompt
+
 
 client = Groq(api_key=settings.GROQ_API_KEY)
+VISION_PROMPT = load_prompt("vlm_prompt.txt")
 
-VISION_SYSTEM_PROMPT = """
-You are a scientific vision assistant.
 
-Describe the figure in detail:
-- Identify trends (increase/decrease/comparison)
-- Mention axes, bars, curves if present
-- Explain what the figure conveys scientifically
-- Do NOT guess values
-- Be factual and concise
-"""
+s3 = boto3.client(
+    "s3",
+    region_name=settings.S3_REGION,
+    aws_access_key_id=settings.S3_ACCESS_KEY,
+    aws_secret_access_key=settings.S3_SECRET_KEY,
+    config=Config(signature_version="s3v4"),
+)
 
-def summarize_figure(image_url: str) -> str:
+def presigned_image_url(bucket: str, key: str, expires=900) -> str:
+    url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=expires,
+    )
+
+    return url
+
+
+def summarize_figure(s3_key: str) -> str:
+    image_url = presigned_image_url(settings.S3_BUCKET, s3_key)
+
     response = client.chat.completions.create(
-        model="llama-3.2-11b-vision-preview",
+        model="meta-llama/llama-4-scout-17b-16e-instruct",
         messages=[
-            {"role": "system", "content": VISION_SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Analyze this figure."},
-                    {"type": "image_url", "image_url": image_url},
-                ],
-            },
+                    {
+                        "type": "text",
+                        "text": VISION_PROMPT
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url}
+                    }
+                ]
+            }
         ],
-        temperature=0.0,
-        max_tokens=400,
+        max_completion_tokens=400,
     )
 
     return response.choices[0].message.content.strip()
