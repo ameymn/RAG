@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     S3_BUCKET: str = Field(default="visionrag-storage", description="S3 Bucket Name")
     S3_ACCESS_KEY: str = Field(default="", description="S3 Access Key")
     S3_SECRET_KEY: str = Field(default="", description="S3 Secret Key")
-    S3_REGION: str = Field(default="us-east-1", description="S3 Region")
+    S3_REGION: str = Field(default="us-east-2", description="S3 Region")
 
     class Config:
         env_file = ".env"
