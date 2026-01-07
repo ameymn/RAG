@@ -1,7 +1,11 @@
+import os
 import streamlit as st
 import requests
+from dotenv import load_dotenv
+load_dotenv()
 
-API_URL = "http://localhost:8000/api/qa/"
+
+API_URL = os.environ.get("API_BASE_URL", "").rstrip("/") + "/api/qa/"
 
 st.set_page_config(page_title="Vision RAG")
 
