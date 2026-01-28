@@ -27,13 +27,18 @@ def create_index_if_needed(dimension: int):
 def upsert_bundles(
     doc_id: str,
     bundles: List[dict],
-    embeddings: List[List[float]]
+    embeddings: List[List[float]],
+    batch_size: int = 50
 ):
-    """Upsert bundles and their embeddings into Pinecone."""
+    """Upsert bundles and their embeddings into Pinecone in batches."""
     index = pc.Index(INDEX_NAME)
 
     vectors = []
     for bundle, vector in zip(bundles, embeddings):
+        # Truncate content to avoid exceeding metadata size limits
+        content = bundle["content"][:8000] if bundle["content"] else ""
+        caption = bundle.get("caption", "")[:2000] if bundle.get("caption") else ""
+
         vectors.append({
             "id": f"{doc_id}:{bundle['bundle_id']}",
             "values": vector,
@@ -41,12 +46,15 @@ def upsert_bundles(
                 "doc_id": doc_id,
                 "bundle_id": bundle["bundle_id"],
                 "type": bundle["type"],
-                "content": bundle["content"],
-                "caption": bundle.get("caption", "")
+                "content": content,
+                "caption": caption
             }
         })
 
-    index.upsert(vectors=vectors, namespace=NAMESPACE)
+    # Upsert in batches to avoid exceeding Pinecone's 2MB request limit
+    for i in range(0, len(vectors), batch_size):
+        batch = vectors[i:i + batch_size]
+        index.upsert(vectors=batch, namespace=NAMESPACE)
 
 
 def query(
