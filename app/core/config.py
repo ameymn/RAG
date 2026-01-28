@@ -3,7 +3,6 @@ from pydantic import Field
 
 class Settings(BaseSettings):
 
-    ## Apis
 
     PINECONE_API_KEY: str = Field(default="", description="Pinecone API key")
     PINECONE_ENVIRONMENT: str = Field(default="us-east-1", description="Pinecone environment region")
