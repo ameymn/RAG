@@ -16,6 +16,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
 app.include_router(qa_router, prefix="/api", tags=["QA"])
 
 UI_DIR = Path(__file__).resolve().parent.parent / "ui"
